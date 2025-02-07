@@ -4,40 +4,58 @@ exports.handler = void 0;
 // import { readFile } from "fs";
 // import { readFile } from "fs/promises";
 const promises_1 = require("./promises");
-const worker_threads_1 = require("worker_threads");
+// import { Worker } from "worker_threads";
+const counter_cb_1 = require("./counter_cb");
 const total = 2000000000;
 const iterations = 5;
 let shared_counter = 0;
 const handler = async (req, res) => {
     const request = shared_counter++;
-    const worker = new worker_threads_1.Worker(__dirname + "/count_worker.js", {
-        workerData: {
-            iterations,
-            total,
-            request,
-        },
-    });
-    worker.on("message", async (iter) => {
-        const msg = `Request: ${request}, Iteration: ${iter}`;
-        console.log(msg);
-        await promises_1.writePromise.bind(res)(msg + "\n");
-    });
-    worker.on("exit", async (code) => {
-        if (code == 0) {
-            await promises_1.endPromise.bind(res)("Done");
-        }
-        else {
+    (0, counter_cb_1.Count)(request, iterations, total, async (error, update) => {
+        if (error !== null) {
+            console.log(error);
             res.statusCode = 500;
             await res.end();
         }
-    });
-    worker.on("error", async (err) => {
-        console.log(err);
-        res.statusCode = 500;
-        await res.end();
+        else if (update !== true) {
+            const msg = `Request: ${request}, Iteration: ${update}`;
+            console.log(msg);
+            await promises_1.writePromise.bind(res)(msg + "\n");
+        }
+        else {
+            await promises_1.endPromise.bind(res)("Done");
+        }
     });
 };
 exports.handler = handler;
+// export const handler = async (req: IncomingMessage, res: ServerResponse) => {
+//   const request = shared_counter++;
+//   const worker = new Worker(__dirname + "/count_worker.js", {
+//     workerData: {
+//       iterations,
+//       total,
+//       request,
+//     },
+//   });
+//   worker.on("message", async (iter: number) => {
+//     const msg = `Request: ${request}, Iteration: ${iter}`;
+//     console.log(msg);
+//     await writePromise.bind(res)(msg + "\n");
+//   });
+//   worker.on("exit", async (code: number) => {
+//     if (code == 0) {
+//       await endPromise.bind(res)("Done");
+//     } else {
+//       res.statusCode = 500;
+//       await res.end();
+//     }
+//   });
+//   worker.on("error", async (err) => {
+//     console.log(err);
+//     res.statusCode = 500;
+//     await res.end();
+//   });
+// };
 // export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   const request = shared_counter++;
 //   const iterate = async (iter: number = 0) => {
