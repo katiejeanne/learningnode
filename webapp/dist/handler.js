@@ -1,33 +1,79 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handler = void 0;
+exports.handler = exports.redirectionHandler = exports.isHttps = void 0;
+const tls_1 = require("tls");
+const url_1 = require("url");
 // import { readFile } from "fs";
 // import { readFile } from "fs/promises";
-const promises_1 = require("./promises");
+// import { endPromise, writePromise } from "./promises";
 // import { Worker } from "worker_threads";
-const counter_cb_1 = require("./counter_cb");
-const total = 2000000000;
-const iterations = 5;
-let shared_counter = 0;
-const handler = async (req, res) => {
-    const request = shared_counter++;
-    (0, counter_cb_1.Count)(request, iterations, total, async (error, update) => {
-        if (error !== null) {
-            console.log(error);
-            res.statusCode = 500;
-            await res.end();
-        }
-        else if (update !== true) {
-            const msg = `Request: ${request}, Iteration: ${update}`;
-            console.log(msg);
-            await promises_1.writePromise.bind(res)(msg + "\n");
+// import { Count } from "./counter_cb";
+const isHttps = (req) => {
+    return req.socket instanceof tls_1.TLSSocket && req.socket.encrypted;
+};
+exports.isHttps = isHttps;
+const redirectionHandler = (req, resp) => {
+    resp.writeHead(302, {
+        Location: "https://localhost:5501",
+    });
+    resp.end();
+};
+exports.redirectionHandler = redirectionHandler;
+const handler = async (req, resp) => {
+    //   console.log(`---HTTP Method: ${req.method}, URL: ${req.url}`);
+    //   console.log(`host: ${req.headers.host}`);
+    //   console.log(`accept: ${req.headers.accept}`);
+    //   console.log(`user-agent: ${req.headers["user-agent"]}`);
+    const protocol = (0, exports.isHttps)(req) ? "https" : "http";
+    const parsedURL = new url_1.URL(req.url ?? "", `${protocol}://${req.headers.host}`);
+    if (req.method !== "GET" || parsedURL.pathname == "/favicon.ico") {
+        resp.writeHead(404, "Not found");
+        resp.end();
+        return;
+    }
+    else {
+        resp.writeHead(200, "OK");
+        if (!parsedURL.searchParams.has("keyword")) {
+            resp.write(`Hello, ${protocol.toUpperCase()}`);
         }
         else {
-            await promises_1.endPromise.bind(res)("Done");
+            resp.write(`Hello, ${parsedURL.searchParams.get("keyword")}`);
         }
-    });
+        resp.end();
+        return;
+    }
+    //   console.log(`protocol: ${parsedURL.protocol}`);
+    //   console.log(`hostname: ${parsedURL.hostname}`);
+    //   console.log(`port: ${parsedURL.port}`);
+    //   console.log(`pathname: ${parsedURL.pathname}`);
+    //   parsedURL.searchParams.forEach((val, key) => {
+    //     console.log(`Search param: ${key}: ${val}`);
+    //   });
+    console.log();
+    resp.end("Hello, World");
 };
 exports.handler = handler;
+// const total = 2_000_000_000;
+// const iterations = 5;
+// let shared_counter = 0;
+// Handles worker threads with a promise
+// export const handler = async (req: IncomingMessage, res: ServerResponse) => {
+//   const request = shared_counter++;
+//   Count(request, iterations, total, async (error, update) => {
+//     if (error !== null) {
+//       console.log(error);
+//       res.statusCode = 500;
+//       await res.end();
+//     } else if (update !== true) {
+//       const msg = `Request: ${request}, Iteration: ${update}`;
+//       console.log(msg);
+//       await writePromise.bind(res)(msg + "\n");
+//     } else {
+//       await endPromise.bind(res)("Done");
+//     }
+//   });
+// };
+// Converts counter to use worker threads
 // export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   const request = shared_counter++;
 //   const worker = new Worker(__dirname + "/count_worker.js", {
@@ -56,6 +102,7 @@ exports.handler = handler;
 //     await res.end();
 //   });
 // };
+// Creates counter for demonstrating concurrency
 // export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   const request = shared_counter++;
 //   const iterate = async (iter: number = 0) => {

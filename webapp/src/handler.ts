@@ -1,32 +1,85 @@
 import { IncomingMessage, ServerResponse } from "http";
+import { TLSSocket } from "tls";
+import { URL } from "url";
 // import { readFile } from "fs";
 // import { readFile } from "fs/promises";
-import { endPromise, writePromise } from "./promises";
+// import { endPromise, writePromise } from "./promises";
 // import { Worker } from "worker_threads";
-import { Count } from "./counter_cb";
+// import { Count } from "./counter_cb";
 
-const total = 2_000_000_000;
-const iterations = 5;
-let shared_counter = 0;
-
-export const handler = async (req: IncomingMessage, res: ServerResponse) => {
-  const request = shared_counter++;
-
-  Count(request, iterations, total, async (error, update) => {
-    if (error !== null) {
-      console.log(error);
-      res.statusCode = 500;
-      await res.end();
-    } else if (update !== true) {
-      const msg = `Request: ${request}, Iteration: ${update}`;
-      console.log(msg);
-      await writePromise.bind(res)(msg + "\n");
-    } else {
-      await endPromise.bind(res)("Done");
-    }
-  });
+export const isHttps = (req: IncomingMessage): boolean => {
+  return req.socket instanceof TLSSocket && req.socket.encrypted;
 };
 
+export const redirectionHandler = (
+  req: IncomingMessage,
+  resp: ServerResponse
+) => {
+  resp.writeHead(302, {
+    Location: "https://localhost:5501",
+  });
+  resp.end();
+};
+
+export const handler = async (req: IncomingMessage, resp: ServerResponse) => {
+  //   console.log(`---HTTP Method: ${req.method}, URL: ${req.url}`);
+  //   console.log(`host: ${req.headers.host}`);
+  //   console.log(`accept: ${req.headers.accept}`);
+  //   console.log(`user-agent: ${req.headers["user-agent"]}`);
+
+  const protocol = isHttps(req) ? "https" : "http";
+
+  const parsedURL = new URL(req.url ?? "", `${protocol}://${req.headers.host}`);
+  if (req.method !== "GET" || parsedURL.pathname == "/favicon.ico") {
+    resp.writeHead(404, "Not found");
+    resp.end();
+    return;
+  } else {
+    resp.writeHead(200, "OK");
+    if (!parsedURL.searchParams.has("keyword")) {
+      resp.write(`Hello, ${protocol.toUpperCase()}`);
+    } else {
+      resp.write(`Hello, ${parsedURL.searchParams.get("keyword")}`);
+    }
+    resp.end();
+    return;
+  }
+  //   console.log(`protocol: ${parsedURL.protocol}`);
+  //   console.log(`hostname: ${parsedURL.hostname}`);
+  //   console.log(`port: ${parsedURL.port}`);
+  //   console.log(`pathname: ${parsedURL.pathname}`);
+  //   parsedURL.searchParams.forEach((val, key) => {
+  //     console.log(`Search param: ${key}: ${val}`);
+  //   });
+  console.log();
+
+  resp.end("Hello, World");
+};
+
+// const total = 2_000_000_000;
+// const iterations = 5;
+// let shared_counter = 0;
+
+// Handles worker threads with a promise
+// export const handler = async (req: IncomingMessage, res: ServerResponse) => {
+//   const request = shared_counter++;
+
+//   Count(request, iterations, total, async (error, update) => {
+//     if (error !== null) {
+//       console.log(error);
+//       res.statusCode = 500;
+//       await res.end();
+//     } else if (update !== true) {
+//       const msg = `Request: ${request}, Iteration: ${update}`;
+//       console.log(msg);
+//       await writePromise.bind(res)(msg + "\n");
+//     } else {
+//       await endPromise.bind(res)("Done");
+//     }
+//   });
+// };
+
+// Converts counter to use worker threads
 // export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   const request = shared_counter++;
 
@@ -60,6 +113,7 @@ export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   });
 // };
 
+// Creates counter for demonstrating concurrency
 // export const handler = async (req: IncomingMessage, res: ServerResponse) => {
 //   const request = shared_counter++;
 
