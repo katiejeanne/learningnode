@@ -1,14 +1,27 @@
 import { createServer } from "http";
-import { handler, redirectionHandler } from "./handler";
+import {
+  redirectionHandler,
+  newUrlHandler,
+  defaultHandler,
+  notFoundHandler,
+} from "./handler";
 import { createServer as createHttpsServer } from "https";
 import { readFileSync } from "fs";
 import path from "path";
+import express, { Express } from "express";
 
 const port = 5001;
 const https_port = 5501;
 
 //const server = createServer(handler);
 const server = createServer(redirectionHandler);
+
+// Set up an express server
+const expressApp: Express = express();
+// Link URL paths to correct handler
+expressApp.get("/favicon.ico", notFoundHandler);
+expressApp.get("/newurl/:message?", newUrlHandler);
+expressApp.get("*", defaultHandler);
 
 // Alternate server.on for filtering out favicon requests
 // server.on("request", (req, res) => {
@@ -39,7 +52,11 @@ const httpsConfig = {
   cert: readFileSync(path.resolve("cert.pem")),
 };
 
-const httpsServer = createHttpsServer(httpsConfig, handler);
+// Initialize server with express
+const httpsServer = createHttpsServer(httpsConfig, expressApp);
+
+// without express
+// const httpsServer = createHttpsServer(httpsConfig, handler);
 
 httpsServer.listen(https_port, () =>
   console.log(`HTTPS Server listening on port ${https_port}`)

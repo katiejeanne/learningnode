@@ -1,15 +1,16 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { TLSSocket } from "tls";
-import { URL } from "url";
+// import { TLSSocket } from "tls";
+// import { URL } from "url";
 // import { readFile } from "fs";
 // import { readFile } from "fs/promises";
 // import { endPromise, writePromise } from "./promises";
 // import { Worker } from "worker_threads";
 // import { Count } from "./counter_cb";
+import { Request, Response } from "express";
 
-export const isHttps = (req: IncomingMessage): boolean => {
-  return req.socket instanceof TLSSocket && req.socket.encrypted;
-};
+// export const isHttps = (req: IncomingMessage): boolean => {
+//   return req.socket instanceof TLSSocket && req.socket.encrypted;
+// };
 
 export const redirectionHandler = (
   req: IncomingMessage,
@@ -21,40 +22,80 @@ export const redirectionHandler = (
   resp.end();
 };
 
-export const handler = async (req: IncomingMessage, resp: ServerResponse) => {
-  //   console.log(`---HTTP Method: ${req.method}, URL: ${req.url}`);
-  //   console.log(`host: ${req.headers.host}`);
-  //   console.log(`accept: ${req.headers.accept}`);
-  //   console.log(`user-agent: ${req.headers["user-agent"]}`);
-
-  const protocol = isHttps(req) ? "https" : "http";
-
-  const parsedURL = new URL(req.url ?? "", `${protocol}://${req.headers.host}`);
-  if (req.method !== "GET" || parsedURL.pathname == "/favicon.ico") {
-    resp.writeHead(404, "Not found");
-    resp.end();
-    return;
-  } else {
-    resp.writeHead(200, "OK");
-    if (!parsedURL.searchParams.has("keyword")) {
-      resp.write(`Hello, ${protocol.toUpperCase()}`);
-    } else {
-      resp.write(`Hello, ${parsedURL.searchParams.get("keyword")}`);
-    }
-    resp.end();
-    return;
-  }
-  //   console.log(`protocol: ${parsedURL.protocol}`);
-  //   console.log(`hostname: ${parsedURL.hostname}`);
-  //   console.log(`port: ${parsedURL.port}`);
-  //   console.log(`pathname: ${parsedURL.pathname}`);
-  //   parsedURL.searchParams.forEach((val, key) => {
-  //     console.log(`Search param: ${key}: ${val}`);
-  //   });
-  console.log();
-
-  resp.end("Hello, World");
+export const notFoundHandler = (req: Request, resp: Response) => {
+  resp.sendStatus(404);
 };
+// export const notFoundHandler = (req: IncomingMessage, resp: ServerResponse) => {
+//   resp.writeHead(404, "Not Found");
+//   resp.end();
+// };
+
+export const newUrlHandler = (req: Request, resp: Response) => {
+  const msg = req.params.message ?? "(No Message)";
+  resp.send(`Hello, ${msg}`);
+  // resp.send("Hello, New URL");
+};
+// export const newUrlHandler = (req: IncomingMessage, resp: ServerResponse) => {
+//   resp.writeHead(200, "OK");
+//   resp.write("Hello, New URL");
+//   resp.end();
+// };
+
+export const defaultHandler = (req: Request, resp: Response) => {
+  if (req.query.keyword) {
+    resp.send(`Hello, ${req.query.keyword}`);
+  } else {
+    resp.send(`Hello, ${req.protocol.toUpperCase()}`);
+  }
+};
+// export const defaultHandler = (req: IncomingMessage, resp: ServerResponse) => {
+//   resp.writeHead(200, "OK");
+//   const protocol = isHttps(req) ? "https" : "http";
+//   const parsedURL = new URL(req.url ?? "", `${protocol}://${req.headers.host}`);
+//   if (!parsedURL.searchParams.has("keyword")) {
+//     resp.write(`Hello, ${protocol.toUpperCase()}`);
+//   } else {
+//     resp.write(`Hello, ${parsedURL.searchParams.get("keyword")}`);
+//   }
+//   resp.end();
+// };
+
+// export const handler = async (req: IncomingMessage, resp: ServerResponse) => {
+//   //   console.log(`---HTTP Method: ${req.method}, URL: ${req.url}`);
+//   //   console.log(`host: ${req.headers.host}`);
+//   //   console.log(`accept: ${req.headers.accept}`);
+//   //   console.log(`user-agent: ${req.headers["user-agent"]}`);
+
+//   const protocol = isHttps(req) ? "https" : "http";
+
+//   const parsedURL = new URL(req.url ?? "", `${protocol}://${req.headers.host}`);
+//   if (req.method !== "GET" || parsedURL.pathname == "/favicon.ico") {
+//     resp.writeHead(404, "Not found");
+//     resp.end();
+//     return;
+//   } else {
+//     resp.writeHead(200, "OK");
+//     if (parsedURL.pathname === "/newurl") {
+//       resp.write("Hello, New URL");
+//     } else if (!parsedURL.searchParams.has("keyword")) {
+//       resp.write(`Hello, ${protocol.toUpperCase()}`);
+//     } else {
+//       resp.write(`Hello, ${parsedURL.searchParams.get("keyword")}`);
+//     }
+//     resp.end();
+//     return;
+//   }
+//   //   console.log(`protocol: ${parsedURL.protocol}`);
+//   //   console.log(`hostname: ${parsedURL.hostname}`);
+//   //   console.log(`port: ${parsedURL.port}`);
+//   //   console.log(`pathname: ${parsedURL.pathname}`);
+//   //   parsedURL.searchParams.forEach((val, key) => {
+//   //     console.log(`Search param: ${key}: ${val}`);
+//   //   });
+//   // console.log();
+
+//   // resp.end("Hello, World");
+// };
 
 // const total = 2_000_000_000;
 // const iterations = 5;
