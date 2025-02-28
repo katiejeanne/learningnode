@@ -2,10 +2,38 @@ import { createServer } from "http";
 import express, { Express, Request, Response } from "express";
 // import { basicHandler } from "./handler";
 import { readHandler } from "./readHandler";
+import cors from "cors";
+import httpProxy from "http-proxy";
+import helmet from "helmet";
 
 const port = 5001;
 
 const expressApp: Express = express();
+
+const proxy = httpProxy.createProxyServer({
+  target: "http://localhost:5100",
+  ws: true,
+});
+
+// expressApp.use((req, resp, next) => {
+//   resp.setHeader("Content-Security-Policy", "img-src 'self'");
+//   next();
+// });
+
+expressApp.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        imgSrc: "'self'",
+        scriptSrcAttr: "'none'",
+        scriptSrc: "'self'",
+        connectSrc: "'self' ws://localhost:5001",
+      },
+    },
+  })
+);
+
+expressApp.use(cors({ origin: "http://localhost:5100" }));
 
 expressApp.use(express.json());
 
@@ -16,22 +44,26 @@ expressApp.use(express.json());
 // expressApp.get("*", basicHandler);
 expressApp.post("/read", readHandler);
 
-expressApp.get("/sendcity", (req, resp) => {
-  resp.sendFile("city.png", { root: "static" });
-});
+// expressApp.get("/sendcity", (req, resp) => {
+//   resp.sendFile("city.png", { root: "static" });
+// });
 
-expressApp.get("/downloadcity", (req: Request, resp: Response) => {
-  resp.download("static/city.png");
-});
+// expressApp.get("/downloadcity", (req: Request, resp: Response) => {
+//   resp.download("static/city.png");
+// });
 
-expressApp.get("/json", (req: Request, resp: Response) => {
-  resp.json("{name: Bob}");
-});
+// expressApp.get("/json", (req: Request, resp: Response) => {
+//   resp.json("{name: Bob}");
+// });
 
 expressApp.use(express.static("static"));
 expressApp.use(express.static("node_modules/bootstrap/dist"));
+// expressApp.use(express.static("dist/client"));
+expressApp.use((req, resp) => proxy.web(req, resp));
 
 const server = createServer(expressApp);
+
+server.on("upgrade", (req, socket, head) => proxy.ws(req, socket, head));
 
 server.listen(port, () => console.log(`HTTP Server listening on port ${port}`));
 
