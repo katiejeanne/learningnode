@@ -1,20 +1,33 @@
 import { Request, Response } from "express";
+import { readFile } from "fs/promises";
 
-export const readHandler = (req: Request, resp: Response) => {
-  //   resp.json({
-  //     message: "Hello, World",
-  //   });
-  resp.cookie("sessionID", "mysecretcode");
-  //   req.pipe(resp);
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk;
-  });
-  req.on("end", () => {
-    resp.setHeader("Content-Type", "text/html");
-    resp.send(body);
-  });
+export const readHandler = async (req: Request, resp: Response) => {
+  console.log("Current working directory:", process.cwd());
+  try {
+    resp.setHeader("Content-Type", "application/json");
+    resp.write(await readFile("data.json"));
+  } catch (err) {
+    resp.writeHead(500);
+    console.log(err);
+  }
+  resp.end();
 };
+
+// export const readHandler = (req: Request, resp: Response) => {
+//   //   resp.json({
+//   //     message: "Hello, World",
+//   //   });
+//   resp.cookie("sessionID", "mysecretcode");
+//   //   req.pipe(resp);
+//   let body = "";
+//   req.on("data", (chunk) => {
+//     body += chunk;
+//   });
+//   req.on("end", () => {
+//     resp.setHeader("Content-Type", "text/html");
+//     resp.send(body);
+//   });
+// };
 
 // import { IncomingMessage, ServerResponse } from "http";
 // // import { Transform } from "stream";
