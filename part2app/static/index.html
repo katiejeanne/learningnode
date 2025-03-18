@@ -5,8 +5,36 @@
     <link href="css/bootstrap.min.css" rel="stylesheet" />
   </head>
   <body>
-    <div id="target"></div>
-    <!--<button id="btn" class="btn btn-primary m-2">Send Request</button>
+    <form action="/form">
+      <div class="m-2">
+        <label class="form-label">Name</label>
+        <input name="name" class="form-control" />
+      </div>
+      <div class="m-2">
+        <label class="form-label">City</label>
+        <input name="city" class="form-control" />
+      </div>
+      <div class="m-2">
+        <label class="form-label">File</label>
+        <input name="datafile" type="file" class="form-control" />
+      </div>
+      <div class="m-2">
+        <button class="btn btn-primary" formmethod="get">Submit (GET)</button>
+        <button class="btn btn-primary" formmethod="post">Submit (POST)</button>
+        <button
+          class="btn btn-primary"
+          formmethod="post"
+          formenctype="multipart/form-data"
+        >
+          Submit (POST/MIME)
+        </button>
+      </div>
+    </form>
+  </body>
+</html>
+
+<!-- <div id="target"></div> -->
+<!--<button id="btn" class="btn btn-primary m-2">Send Request</button>
     <table class="table table-striped">
       <tbody>
         <tr>
@@ -19,5 +47,3 @@
         </tr>
       </tbody>
     </table> -->
-  </body>
-</html>

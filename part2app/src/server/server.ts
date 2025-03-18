@@ -6,6 +6,7 @@ import helmet from "helmet";
 // import { registerCustomTemplateEngine } from "./custom_engine";
 import { engine } from "express-handlebars";
 import * as helpers from "./template_helpers";
+import { registerFormMiddleware, registerFormRoutes } from "./forms";
 
 const port = 5001;
 
@@ -19,16 +20,14 @@ const proxy = httpProxy.createProxyServer({
 // registerCustomTemplateEngine(expressApp);
 expressApp.set("views", "templates/server");
 
-expressApp.engine(
-  "handlebars",
-  engine({
-    layoutsDir: "templates/server",
-  })
-);
+expressApp.engine("handlebars", engine());
 expressApp.set("view engine", "handlebars");
 
 expressApp.use(helmet());
 expressApp.use(express.json());
+
+registerFormMiddleware(expressApp);
+registerFormRoutes(expressApp);
 
 expressApp.get("/dynamic/:file", (req, res) => {
   res.render(`${req.params.file}.handlebars`, {
@@ -38,9 +37,9 @@ expressApp.get("/dynamic/:file", (req, res) => {
   });
 });
 
-expressApp.get("/dynamic/:file", (req, res) => {
-  res.render(`${req.params.file}.custom`, { message: "Hello template", req });
-});
+// expressApp.get("/dynamic/:file", (req, res) => {
+//   res.render(`${req.params.file}.custom`, { message: "Hello template", req });
+// });
 
 expressApp.post("/test", testHandler);
 expressApp.use(express.static("static"));
