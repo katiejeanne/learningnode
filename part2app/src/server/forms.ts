@@ -1,7 +1,10 @@
 import express, { Express } from "express";
 // import multer from "multer";
 // import { sanitizeValue } from "./sanitize";
-import { getValidationResults, validate } from "./validation";
+// import { getValidationResults, validate } from "./validation";
+import repository from "./data";
+
+const rowLimit = 10;
 
 // const fileMiddleware = multer({ storage: multer.memoryStorage() });
 
@@ -10,29 +13,68 @@ export const registerFormMiddleware = (app: Express) => {
 };
 
 export const registerFormRoutes = (app: Express) => {
-  app.get("/form", (req, resp) => {
-    resp.render("age", { helpers: { pass } });
+  app.get("/form", async (req, resp) => {
+    try {
+      const history = await repository.getAllResults(rowLimit);
+      resp.render("age", { history });
+    } catch (error) {
+      console.log("Error fetching results:", error);
+    }
   });
 
-  app.post(
-    "/form",
-    validate("name").required().minLength(5),
-    validate("age").isInteger(),
-    (req, resp) => {
-      const validation = getValidationResults(req);
-      const context = { ...req.body, validation, helpers: { pass } };
-      if (validation.valid) {
-        context.nextage = Number.parseInt(req.body.age) + 1;
-      }
+  app.post("/form", async (req, resp) => {
+    try {
+      const nextage =
+        Number.parseInt(req.body.age) + Number.parseInt(req.body.years);
+
+      await repository.saveResult({ ...req.body, nextage });
+
+      const context = {
+        ...req.body,
+        nextage,
+        history: await repository.getResultsByName(req.body.name, rowLimit),
+      };
       resp.render("age", context);
+    } catch (error) {
+      console.log("Error fetching history.", error);
     }
-  );
+  });
 };
 
-const pass = (valid: any, propname: string, test: string) => {
-  let propResult = valid?.results?.[propname];
-  return `display:${!propResult || propResult[test] ? "none" : "block"}`;
-};
+// export const registerFormRoutes = (app: Express) => {
+//   app.get("/form", (req, resp) => {
+//     resp.render("age", { helpers: { pass } });
+//   });
+
+//   app.post("/form", (req, resp) => {
+//     const nextage =
+//       Number.parseInt(req.body.age) + Number.parseInt(req.body.years);
+//     const context = {
+//       ...req.body,
+//       nextage,
+//     };
+//     resp.render("age", context);
+//   });
+
+//   // app.post(
+//   //   "/form",
+//   //   validate("name").required().minLength(5),
+//   //   validate("age").isInteger(),
+//   //   (req, resp) => {
+//   //     const validation = getValidationResults(req);
+//   //     const context = { ...req.body, validation, helpers: { pass } };
+//   //     if (validation.valid) {
+//   //       context.nextage = Number.parseInt(req.body.age) + 1;
+//   //     }
+//   //     resp.render("age", context);
+//   //   }
+//   // );
+// };
+
+// const pass = (valid: any, propname: string, test: string) => {
+//   let propResult = valid?.results?.[propname];
+//   return `display:${!propResult || propResult[test] ? "none" : "block"}`;
+// };
 
 // Using Express automatic sanitizing
 // export const registerFormRoutes = (app: Express) => {

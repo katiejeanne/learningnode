@@ -1,11 +1,11 @@
 import { createServer } from "http";
 import express, { Express } from "express";
-import { testHandler } from "./testHandler";
+// import { testHandler } from "./testHandler";
 import httpProxy from "http-proxy";
 import helmet from "helmet";
 // import { registerCustomTemplateEngine } from "./custom_engine";
 import { engine } from "express-handlebars";
-import * as helpers from "./template_helpers";
+// import * as helpers from "./template_helpers";
 import { registerFormMiddleware, registerFormRoutes } from "./forms";
 
 const port = 5001;
@@ -19,7 +19,6 @@ const proxy = httpProxy.createProxyServer({
 
 // registerCustomTemplateEngine(expressApp);
 expressApp.set("views", "templates/server");
-
 expressApp.engine("handlebars", engine());
 expressApp.set("view engine", "handlebars");
 
@@ -29,21 +28,25 @@ expressApp.use(express.json());
 registerFormMiddleware(expressApp);
 registerFormRoutes(expressApp);
 
-expressApp.get("/dynamic/:file", (req, res) => {
-  res.render(`${req.params.file}.handlebars`, {
-    message: "Hello template",
-    req,
-    helpers: { ...helpers },
-  });
-});
+expressApp.use("^/$", (req, resp) => resp.redirect("/form"));
+
+// expressApp.get("/dynamic/:file", (req, res) => {
+//   res.render(`${req.params.file}.handlebars`, {
+//     message: "Hello template",
+//     req,
+//     helpers: { ...helpers },
+//   });
+// });
 
 // expressApp.get("/dynamic/:file", (req, res) => {
 //   res.render(`${req.params.file}.custom`, { message: "Hello template", req });
 // });
 
-expressApp.post("/test", testHandler);
+// expressApp.post("/test", testHandler);
+
 expressApp.use(express.static("static"));
 expressApp.use(express.static("node_modules/bootstrap/dist"));
+
 expressApp.use((req, res) => proxy.web(req, res));
 
 const server = createServer(expressApp);
