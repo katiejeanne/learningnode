@@ -3,6 +3,10 @@ import express, { Express } from "express";
 // import { sanitizeValue } from "./sanitize";
 // import { getValidationResults, validate } from "./validation";
 import repository from "./data";
+import { getJsonCookie, setJsonCookie } from "./cookies";
+import cookieMiddleware from "cookie-parser";
+import { customSessionMiddleware } from "./sessions/middleware";
+import { getSession, sessionMiddleware } from "./sessions/session_helpers";
 
 const rowLimit = 10;
 
@@ -10,13 +14,19 @@ const rowLimit = 10;
 
 export const registerFormMiddleware = (app: Express) => {
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookieMiddleware("mysecret"));
+  // app.use(customSessionMiddleware());
+  app.use(sessionMiddleware());
 };
 
 export const registerFormRoutes = (app: Express) => {
   app.get("/form", async (req, resp) => {
     try {
-      const history = await repository.getAllResults(rowLimit);
-      resp.render("age", { history });
+      resp.render("age", {
+        history: await repository.getAllResults(rowLimit),
+        // personalHistory: getJsonCookie(req, "personalHistory"),
+        personalHistory: getSession(req).personalHistory,
+      });
     } catch (error) {
       console.log("Error fetching results:", error);
     }
@@ -29,10 +39,23 @@ export const registerFormRoutes = (app: Express) => {
 
       await repository.saveResult({ ...req.body, nextage });
 
+      req.session.personalHistory = [
+        {
+          name: req.body.name,
+          age: req.body.age,
+          years: req.body.years,
+          nextage,
+        },
+        ...(req.session.personalHistory || []),
+      ].splice(0, 5);
+
+      // setJsonCookie(resp, "personalHistory", pHistory);
+
       const context = {
         ...req.body,
         nextage,
-        history: await repository.getResultsByName(req.body.name, rowLimit),
+        history: await repository.getAllResults(rowLimit),
+        personalHistory: req.session.personalHistory,
       };
       resp.render("age", context);
     } catch (error) {
