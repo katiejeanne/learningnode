@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { engine } from "express-handlebars";
 // import * as helpers from "./template_helpers";
 import { registerFormMiddleware, registerFormRoutes } from "./forms";
+import { createApi } from "./api";
 
 const port = 5001;
 
@@ -23,11 +24,16 @@ expressApp.engine("handlebars", engine());
 expressApp.set("view engine", "handlebars");
 
 expressApp.use(helmet());
-expressApp.use(express.json());
+expressApp.use(
+  express.json({
+    type: ["application/json", "application/json-patch+json"],
+  })
+);
 
 registerFormMiddleware(expressApp);
 registerFormRoutes(expressApp);
 
+createApi(expressApp);
 expressApp.use("^/$", (req, resp) => resp.redirect("/form"));
 
 // expressApp.get("/dynamic/:file", (req, res) => {

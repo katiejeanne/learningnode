@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { Repository, Result } from "./repository";
+import { ApiRepository, Result } from "./repository";
 import {
   addSeedData,
   defineRelationships,
@@ -8,7 +8,7 @@ import {
 } from "./orm_helpers";
 import { Calculation, Person, ResultModel } from "./orm_models";
 
-export class OrmRepository implements Repository {
+export class OrmRepository implements ApiRepository {
   sequelize: Sequelize;
 
   constructor() {
@@ -78,5 +78,41 @@ export class OrmRepository implements Repository {
         order: [["id", "DESC"]],
       })
     ).map((row) => fromOrmModel(row));
+  }
+
+  async getResultsById(id: number): Promise<Result | undefined> {
+    const model = await ResultModel.findByPk(id, {
+      include: [Person, Calculation],
+    });
+    return model ? fromOrmModel(model) : undefined;
+  }
+
+  async delete(id: number): Promise<boolean> {
+    const count = await ResultModel.destroy({ where: { id } });
+    return count === 1;
+  }
+
+  async update(r: Result): Promise<Result | undefined> {
+    const mod = await this.sequelize.transaction(async (transaction) => {
+      const stored = await ResultModel.findByPk(r.id);
+      if (stored !== null) {
+        const [person] = await Person.findOrCreate({
+          where: { name: r.name },
+          transaction,
+        });
+        const [calculation] = await Calculation.findOrCreate({
+          where: {
+            age: r.age,
+            years: r.years,
+            nextage: r.nextage,
+          },
+          transaction,
+        });
+        stored.personId = person.id;
+        stored.calculationId = calculation.id;
+        return await stored.save({ transaction });
+      }
+    });
+    return mod ? this.getResultsById(mod.id) : undefined;
   }
 }
