@@ -2,10 +2,12 @@ import { WebService } from "./http_adapter";
 import { Result } from "../data/repository";
 import repository from "../data";
 import * as jsonpatch from "fast-json-patch";
+import { validateModel } from "./validation_functions";
+import { ResultModelValidation } from "./results_api_validation";
 
 export class ResultWebService implements WebService<Result> {
   getOne(id: any): Promise<Result | undefined> {
-    return repository.getResultsById(Number.parseInt(id));
+    return repository.getResultsById(id);
   }
 
   getMany(query: any): Promise<Result[]> {
@@ -18,7 +20,8 @@ export class ResultWebService implements WebService<Result> {
 
   async store(data: any): Promise<Result | undefined> {
     const { name, age, years } = data;
-    const nextage = Number.parseInt(age) + Number.parseInt(years);
+    // const nextage = Number.parseInt(age) + Number.parseInt(years);
+    const nextage = age + years;
     const id = await repository.saveResult({
       id: 0,
       name,
@@ -35,6 +38,10 @@ export class ResultWebService implements WebService<Result> {
 
   replace(id: any, data: any): Promise<Result | undefined> {
     const { name, age, years, nextage } = data;
+    const validated = validateModel(
+      { name, age, years, nextage },
+      ResultModelValidation
+    );
     return repository.update({ id, name, age, years, nextage });
   }
 

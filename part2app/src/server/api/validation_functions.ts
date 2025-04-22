@@ -1,10 +1,13 @@
 import {
+  ModelValidation,
   ValidationError,
   ValidationRequirements,
   ValidationRule,
   WebServiceValidation,
 } from "./validation_types";
+
 export type ValidationResult = [valid: boolean, value: any];
+
 export function validate(data: any, reqs: ValidationRequirements): any {
   let validatedData: any = {};
   Object.entries(reqs).forEach(([prop, rule]) => {
@@ -17,6 +20,7 @@ export function validate(data: any, reqs: ValidationRequirements): any {
   });
   return validatedData;
 }
+
 function applyRule(val: any, rule: ValidationRule): ValidationResult {
   const required = Array.isArray(rule) ? true : rule.required;
   const checks = Array.isArray(rule) ? rule : rule.validation;
@@ -32,6 +36,7 @@ function applyRule(val: any, rule: ValidationRule): ValidationResult {
   });
   return [valid, convert ? convert(val) : val];
 }
+
 export function validateIdProperty<T>(val: any, v: WebServiceValidation): any {
   if (v.keyValidator) {
     const [valid, value] = applyRule(val, v.keyValidator);
@@ -41,4 +46,17 @@ export function validateIdProperty<T>(val: any, v: WebServiceValidation): any {
     throw new ValidationError("ID", "Validation Error");
   }
   return val;
+}
+
+export function validateModel(model: any, rules: ModelValidation): any {
+  if (rules.propertyRules) {
+    model = validate(model, rules.propertyRules);
+  }
+  if (rules.modelRule) {
+    const [valid, data] = applyRule(model, rules.modelRule);
+    if (valid) {
+      return data;
+    }
+    throw new ValidationError("Model", "Validation Error");
+  }
 }

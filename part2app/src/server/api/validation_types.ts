@@ -23,3 +23,8 @@ export class ValidationError implements Error {
   stack?: string | undefined;
   cause?: unknown;
 }
+
+export type ModelValidation = {
+  modelRule?: ValidationRule;
+  propertyRules?: ValidationRequirements;
+};
